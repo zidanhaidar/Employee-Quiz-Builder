@@ -2,6 +2,8 @@
 
 An internal tool for The Parentinc that generates AI-powered, multiple-choice parenting/child-development quizzes, shares them with a code, and tracks who took each quiz and how they scored.
 
+> 🤖 For the AI prompts, model, and structured-output details, see **[AI_USAGE.md](./AI_USAGE.md)**.
+
 ## Features
 
 - **AI quiz generation** — type any topic and get a ready-to-take quiz with explanations (powered by Google Gemini via the Vercel AI SDK).
