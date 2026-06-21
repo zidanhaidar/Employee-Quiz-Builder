@@ -69,42 +69,17 @@ createdb quiz_generator
 
 ### 3. Create the tables
 
-The project doesn't ship migration files yet, so create the schema once with the SQL below (it matches `lib/db/schema.ts`):
+The project doesn't ship migration files yet, so create the schema once using the included [`schema.sql`](./schema.sql) (it matches `lib/db/schema.ts`):
 
-```sql
-CREATE TABLE IF NOT EXISTS users (
-  id serial PRIMARY KEY,
-  email text NOT NULL UNIQUE,
-  name text NOT NULL DEFAULT '',
-  password_hash text NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now()
-);
-
-CREATE TABLE IF NOT EXISTS quizzes (
-  id serial PRIMARY KEY,
-  user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  code text NOT NULL UNIQUE,
-  topic text NOT NULL,
-  difficulty text NOT NULL DEFAULT 'Mixed',
-  language text NOT NULL DEFAULT 'English',
-  question_count integer NOT NULL DEFAULT 10,
-  questions jsonb NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now()
-);
-
-CREATE TABLE IF NOT EXISTS attempts (
-  id serial PRIMARY KEY,
-  quiz_id integer NOT NULL REFERENCES quizzes(id) ON DELETE CASCADE,
-  taker_name text NOT NULL,
-  score integer NOT NULL,
-  total integer NOT NULL,
-  answers jsonb NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now()
-);
-CREATE INDEX IF NOT EXISTS attempts_quiz_id_idx ON attempts(quiz_id);
+```bash
+psql -d quiz_generator -f schema.sql
 ```
 
-Save it to a file and run `psql -d quiz_generator -f schema.sql`, or paste it into a `psql` session.
+For a hosted database, point it at the remote connection string instead:
+
+```bash
+psql "YOUR_HOSTED_DATABASE_URL" -f schema.sql
+```
 
 ### 4. Set your environment variables
 
@@ -131,6 +106,38 @@ pnpm start
 
 ```bash
 npx tsc --noEmit
+```
+
+## Deploying to Vercel
+
+The app runs on Vercel natively. The only extra requirement is a **hosted Postgres database** (local Postgres isn't reachable from Vercel).
+
+1. **Create a hosted Postgres database** with [Neon](https://neon.tech) (recommended), [Supabase](https://supabase.com), or Vercel Postgres. Copy its connection string (use the **pooled** one if offered — better for serverless).
+2. **Create the tables** on that database:
+   ```bash
+   psql "YOUR_HOSTED_DATABASE_URL" -f schema.sql
+   ```
+3. **Import the repo** at <https://vercel.com/new> (Continue with GitHub → select this repo). Vercel auto-detects Next.js and pnpm.
+4. **Add Environment Variables** in the import screen (or Project → Settings → Environment Variables):
+   | Name | Value |
+   | --- | --- |
+   | `GOOGLE_GENERATIVE_AI_API_KEY` | your Google AI Studio key |
+   | `DATABASE_URL` | your hosted Postgres connection string |
+   | `SESSION_SECRET` | a long random string (see command above) |
+5. **Deploy.** You'll get a `*.vercel.app` URL. Share links (`/take/<code>`) automatically use your deployed domain.
+
+Pushing to `main` afterwards triggers an automatic redeploy.
+
+### Via the Vercel CLI
+
+```bash
+npm i -g vercel
+vercel login
+vercel link
+vercel env add GOOGLE_GENERATIVE_AI_API_KEY production
+vercel env add DATABASE_URL production
+vercel env add SESSION_SECRET production
+vercel --prod
 ```
 
 ## How to use
